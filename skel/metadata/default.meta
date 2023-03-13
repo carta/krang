@@ -1,0 +1,47 @@
+# Application-level permissions
+
+[]
+access = read : [ * ], write : [ admin ]
+export = system
+
+### EVENT TYPES
+
+[eventtypes]
+access = read : [ * ], write : [ ]
+export = system
+
+### PROPS
+
+[props]
+access = read : [ * ], write : [ ]
+export = system
+
+### TRANSFORMS
+
+[transforms]
+access = read : [ * ], write : [ ]
+export = system
+
+### LOOKUPS
+
+[lookups]
+access = read : [ * ], write : [ ]
+export = system
+
+### MACROS
+
+[macros]
+access = read : [ * ], write : [ ]
+export = system
+
+### TAGS
+
+[tags]
+access = read : [ * ], write : [ ]
+export = system
+
+### SAVEDSEARCHES
+
+[savedsearches]
+access = read : [ * ], write : [ ]
+export = system

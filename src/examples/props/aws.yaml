@@ -1,0 +1,124 @@
+# Copyright 2023 eShares, Inc. dba Carta, Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");  you may not
+# use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#    https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#
+# See the License for the specific language governing permissions and
+# limitations under the License.
+---
+# CIM field cleanup for some cloudtrail log events
+sourcetype: aws:cloudtrail
+fields:
+  user: |
+    case(
+        like('userIdentity.principalId',"%:%@%"),
+            mvindex(split('userIdentity.principalId',":"),1),
+        eventName="PutBucketAcl",
+            'userIdentity.userName',
+        eventName IN("CreateLoadBalancerListeners","CreateLoadBalancerPolicy","CreateLogGroup","CreateLogStream","GetBucketEncryption"),
+            'userIdentity.sessionContext.sessionIssuer.userName',
+        eventName="CreateLoginProfile",
+            'responseElements.loginProfile.userName',
+        eventName="CreateUser",
+            'responseElements.user.userName',
+        (eventName="DeleteUser" OR eventName="DeleteLoginProfile"),
+            'requestParameters.userName',
+        eventName="UpdateUser",
+            'requestParameters.newUserName',
+        eventName="CreateAccessKey", coalesce('responseElements.accessKey.userName',
+            replace(errorMessage, ".*resource\s*:\s*(?:user\s*)?(.*)","\1")),
+        (eventName="ListSigningCertificates" OR eventName="ListAccessKeys"
+          OR eventName="GetUser" OR eventName="GetAccountSummary"
+          OR eventName="ListAccountAliases" OR eventName="ListSigningCertificates"),
+            replace(errorMessage, ".*resource\s*:\s*(?:user\s*)?(.*)","\1"),
+        eventName="CreateVirtualMFADevice",
+            'userIdentity.userName',
+        eventName="CreateNetworkInterface",
+            'userIdentity.sessionContext.sessionIssuer.userName',
+        eventName="AssumeRole" AND 'userIdentity.type'="AssumedRole",
+            mvindex(split('requestParameters.roleArn', "/"), -1),
+        eventName="AssumeRole" OR eventName="AssumeRoleWithSAML" OR eventName="AssumeRoleWithWebIdentity",
+            case(
+                like('responseElements.assumedRoleUser.arn', "%:assumed-role/%"),
+                    mvindex(split('responseElements.assumedRoleUser.arn',"/"), -2),
+                like('', "%/%"),
+                    mvindex(split('responseElements.assumedRoleUser.arn',"/"), -1),
+                true(),
+                    'responseElements.assumedRoleUser.arn'
+            ),
+        eventName="ConsoleLogin" AND 'userIdentity.type'="AssumedRole" AND isnotnull('additionalEventData.LoginTo'),
+            mvindex(split('userIdentity.principalId', ":"), 1),
+        eventType="AwsConsoleSignIn" OR eventName IN("ListAliases","ListRoles"),
+            coalesce('userIdentity.userName','userIdentity.sessionContext.sessionIssuer.userName'),
+        like(eventName, "%Instances") OR like(eventName, "%Volume") OR like(eventName,"Put%") OR like(eventName,"%Bucket"),
+            coalesce('userIdentity.userName','userIdentity.sessionContext.sessionIssuer.userName'),
+        like(eventName, "SharedSnapshotVolume%"),
+            'userIdentity.accountId',
+        like('userIdentity.arn',"arn:aws:sts::%:assumed-role/%/%"),
+            mvindex(split('userIdentity.arn',"/"),-2),
+        (isnotnull('userIdentity.userName') AND like('userIdentity.principalId', "AIDA%")),
+            'userIdentity.userName',
+        isnotnull('userIdentity.principalId'),
+            coalesce(mvindex(split('userIdentity.principalId', ":"), -1), 'userIdentity.principalId'),
+        isnotnull('userIdentity.userName'),
+            'userIdentity.userName',
+        true(),
+            "unknown"
+    )	
+
+  object: |
+        case(
+            like(eventName, "%Instances"),
+                if((eventName="RunInstances"),
+                    coalesce('responseElements.instancesSet.items{}.instanceId', 'eventSource'),
+                    coalesce('requestParameters.instancesSet.items{}.instanceId', 'eventSource')),
+            like(eventName, "%SecurityGroup%"),
+                coalesce('responseElements.groupId', 'requestParameters.groupId'),
+            like(eventName, "%Volume"),
+                if((eventName="CreateVolume"),'responseElements.volumeId', 'requestParameters.volumeId'),
+            like(eventName, "%NetworkAcl%"),
+                coalesce('requestParameters.networkAclId', 'responseElements.networkAcl.networkAclId'),
+            (like(eventName, "%Bucket%") OR eventName="PutObject"), 'requestParameters.bucketName',
+            like(eventName, "%Object"), coalesce('requestParameters.key', 'requestParameters.bucketName'),
+            like(eventName, "%Service"), 'requestParameters.service',
+            eventName="CreateUser",'responseElements.user.userName',
+            eventName="DeleteUser" OR eventName="DeleteLoginProfile",'requestParameters.userName',
+            eventName="UpdateUser",'requestParameters.newUserName',
+            eventName="CreateLoginProfile",'responseElements.loginProfile.userName',
+            eventName="CreateAccessKey",
+                coalesce('responseElements.accessKey.userName',replace(errorMessage, ".*resource\s*:\s*(?:user\s*)?(.*)","\1")),
+            eventName="CreateVirtualMFADevice",mvindex(split('responseElements.virtualMFADevice.serialNumber', "/"), 1),
+            eventName="ListAccessKeys" OR eventName="GetUser" OR eventName="GetAccountSummary" OR eventName="ListAccountAliases",
+                replace(errorMessage, ".*resource\s*:\s*(?:user\s*)?(.*)","\1"),
+            eventName="CreateChangeSet",'requestParameters.stackName',
+            eventName="CreateDeliveryStream",'requestParameters.deliveryStreamName',
+            eventName="CreateKeyspace",'requestParameters.keyspaceName',
+            eventName="CreateLoadBalancerListeners",'requestParameters.loadBalancerName',
+            eventName="CreateLoadBalancerPolicy",'requestParameters.loadBalancerName',
+            eventName="CreateQueue",'requestParameters.queueName',
+            eventName="CreateTable",'requestParameters.tableName',
+            eventName="CreateFunction20150331",'requestParameters.functionName',
+            eventName="CreateLogGroup",'requestParameters.logGroupName',
+            eventName="CreateLogStream",'requestParameters.logStreamName',
+            eventName="CreateNetworkInterface",'responseElements.networkInterface.networkInterfaceId',
+            eventName="DeleteNetworkInterface",'requestParameters.networkInterfaceId',
+            eventName="ListSigningCertificates",replace(errorMessage, ".*resource\s*:\s*(?:user\s*)?(.*)","\1"),
+            like(eventName, "%Snapshot%"), coalesce('requestParameters.snapshotId','serviceEventDetails.snapshotId'),
+            like(eventName, "%DBInstance"), coalesce('requestParameters.dBInstanceIdentifier','responseElements.dBInstanceIdentifier'),
+            true(), 'resources{}.ARN'
+        )
+lookups:
+  aws_cloudtrail_eventname:
+    inputs:
+    - eventName
+    outputs:
+    - object_category
+tags:
+- cloud

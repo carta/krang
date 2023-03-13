@@ -1,0 +1,7 @@
+venv
+.env
+.*.sw*
+__pycache__
+build
+.DS_Store
+*.tgz

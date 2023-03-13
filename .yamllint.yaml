@@ -1,0 +1,12 @@
+---
+
+yaml-files:
+  - '*.yaml'
+  - '*.yml'
+  - '.yamllint'
+
+rules:
+  line-length: disable
+  indentation:
+    level: warning
+    indent-sequences: consistent
