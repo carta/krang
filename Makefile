@@ -116,6 +116,18 @@ lint: deps
 
 .PHONY: check lint
 
+## Validate
+validate: $(PACKAGE)
+ifneq ($(SPLUNK_USER),)
+	 ./splunkappvalidate.sh -u $(SPLUNK_USER) -p $(SPLUNK_PASS) $(PACKAGE)
+else
+	@echo
+	@echo '$$SPLUNK_USER not set, cannot validate app'
+	@exit 1
+endif
+
+.PHONY: validate
+
 ## Clean
 
 clean:

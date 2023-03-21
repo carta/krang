@@ -11,8 +11,8 @@ pipeline {
         }
         stage('validate') {
             steps {
-                withCredentials([usernamePassword(credentialsId: 'splunkbase', passwordVariable: 'PASS', usernameVariable: 'USER')]) {
-                    sh 'bash splunkappvalidate.sh -u $USER -p $PASS ${APPNAME}.tgz'
+                withCredentials([usernamePassword(credentialsId: 'splunkbase', passwordVariable: 'SPLUNK_PASS', usernameVariable: 'SPLUNK_USER')]) {
+                    sh 'make validate'
                 }
             }
             post {
