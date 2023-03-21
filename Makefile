@@ -119,7 +119,7 @@ lint: deps
 ## Validate
 validate: $(PACKAGE)
 ifneq ($(SPLUNK_USER),)
-	 ./splunkappvalidate.sh -u $(SPLUNK_USER) -p $(SPLUNK_PASS) $(PACKAGE)
+	 ./splunkappvalidate.sh -u '$(SPLUNK_USER)' -p '$(SPLUNK_PASS)' $(PACKAGE)
 else
 	@echo
 	@echo '$$SPLUNK_USER not set, cannot validate app'
