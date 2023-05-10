@@ -87,8 +87,13 @@ class SplunkGen:
     def load_file(self, file: str, **kwargs) -> None:
         fname, ext = os.path.splitext(file)
         if ext in ['.yaml','.yml']:
-            for doc in yaml.load_all(open(file, 'r'), Loader=yaml.Loader):
-                self.load_doc(doc, **kwargs)
+            try:
+                for doc in yaml.load_all(open(file, 'r'), Loader=yaml.Loader):
+                    self.load_doc(doc, **kwargs)
+            except yaml.scanner.ScannerError as e:
+                print(f'*** ERROR loading {file} : {e.problem} {e.problem_mark}')
+                print('Continuing...')
+
         elif ext in ['.csv']:
             _static_lookup(self, file)
 
