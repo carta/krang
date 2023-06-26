@@ -23,9 +23,9 @@ pipeline {
         }
         stage('deploy') {
             steps {
-                withCredentials([usernamePassword(credentialsId: 'splunkbase', passwordVariable: 'PASS', usernameVariable: 'USER')]) {
+                withCredentials([usernamePassword(credentialsId: 'splunkbase', passwordVariable: 'SPLUNK_PASS', usernameVariable: 'SPLUNK_USER')]) {
                     script {
-                        env.APPVALTOK = sh(script: 'curl -k -u ${USER}:${PASS} https://api.splunk.com/2.0/rest/login/splunk | jq -r .data.token | grep -v null', returnStdout: true).trim()
+                        env.APPVALTOK = sh(script: 'curl -k -u ${SPLUNK_USER}:${SPLUNK_PASS} https://api.splunk.com/2.0/rest/login/splunk | jq -r .data.token | grep -v null', returnStdout: true).trim()
                     }
                 }
                 withCredentials([string(credentialsId: 'splunk_acs', variable: 'TOKEN')]) {
