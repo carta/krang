@@ -26,15 +26,35 @@ pipeline {
                 withCredentials([usernamePassword(credentialsId: 'splunkbase', passwordVariable: 'PASS', usernameVariable: 'USERNAME')]) {
                     script {
                         env.APPVALTOK = sh(script: 'curl -k -u ${USERNAME}:${PASS} https://api.splunk.com/2.0/rest/login/splunk | jq -r .data.token | grep -v null', returnStdout: true).trim()
+
                     }
                 }
-                withCredentials([string(credentialsId: 'splunk_acs', variable: 'TOKEN')]) {
+                withCredentials([usernamePassword(credentialsId: 'splunk_sa', passwordVariable: 'PASS', usernameVariable: 'USERNAME')]) {
                   script {
-                    sh 'curl -X POST "https://admin.splunk.com/${SPLUNK_STACK}/adminconfig/v2/apps/victoria" \
+                    env.TOKEN = sh(script: ''' curl -X POST -k -u ${USERNAME}:${PASS} "https://admin.splunk.com/carta/adminconfig/v2/tokens" \
+                    -H "Content-Type: application/json" \
+                    --data-raw '{
+                          "user" : "'"${USERNAME}"'",
+                          "audience" : "jenkins",
+                          "expiresOn" : "+5m",
+                          "type" : "ephemeral"
+                    }' | jq -r .token '''
+                    , returnStdout: true).trim()
+
+                    env.RESPONSE = sh(script: 'curl -X POST "https://admin.splunk.com/${SPLUNK_STACK}/adminconfig/v2/apps/victoria" \
                         -H "X-Splunk-Authorization: ${APPVALTOK}" \
                         -H "Authorization: Bearer $TOKEN" \
                         -H "ACS-Legal-Ack: Y" \
-                        --data-binary "@${APPNAME}.tgz"'
+                        --data-binary "@${APPNAME}.tgz"' \
+                        , returnStdout: true).trim()
+
+                    def responseJson = readJSON text: RESPONSE
+                    def installStatus = responseJson.status
+                    echo "Deployment Status: $installStatus"
+
+                    if(installStatus != "installed") {
+                        error ('App Install Failed. Exiting script')
+                    }
                   }
                 }
             }
