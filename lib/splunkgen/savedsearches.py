@@ -126,8 +126,8 @@ def _alert(self, doc: dict) -> Mapping[str, dict]:
         'counttype': 'number of events'
     }
     # allow setting relation & quantity in savedsearches.conf
-    if doc.get('trigger') and type(doc['trigger']) == dict:
-        relation = doc['trigger'].keys()[0]
+    if doc.get('trigger') and isinstance(doc['trigger'], dict):
+        relation = list(doc['trigger'].keys())[0]
         ret['relation'] = relation
         ret['quantity'] = doc['trigger'][relation]
     else:
