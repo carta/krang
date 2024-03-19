@@ -31,7 +31,7 @@ pipeline {
                 }
                 withCredentials([usernamePassword(credentialsId: 'splunk_sa', passwordVariable: 'PASS', usernameVariable: 'USERNAME')]) {
                   script {
-                    env.TOKEN = sh(script: ''' curl -X POST -k -u ${USERNAME}:${PASS} "https://admin.splunk.com/carta/adminconfig/v2/tokens" \
+                    env.TOKEN = sh(script: ''' curl -X POST -k -u ${USERNAME}:${PASS} "https://admin.splunk.com/${SPLUNK_STACK}/adminconfig/v2/tokens" \
                     -H "Content-Type: application/json" \
                     --data-raw '{
                           "user" : "'"${USERNAME}"'",
