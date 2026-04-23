@@ -120,3 +120,6 @@ Risk-based alerting in ES can be achieved through `risk_score`, `impact`, and `c
 An `observables` object is used by Splunk to apply risk to specific objects by way of a `risk` alert action and if an observables object is present, SplunkGen will add RBA fields to the final representation
 
 Notables are used in ES as an alert action, and unless suppressed with `notable: false` SplunkGen will generate notable action fields for alerts, with severity the same as the RBA risk score
+
+
+Test
