@@ -4,15 +4,20 @@ pipeline {
         APPVERSION = "1.0.${BUILD_NUMBER}"
     }
     stages {
+        stage('setup') {
+            steps {
+                sh 'curl -LsSf https://astral.sh/uv/install.sh | sh'
+            }
+        }
         stage('build') {
             steps {
-                sh 'make'
+                sh 'export PATH="$HOME/.local/bin:$PATH" && make'
             }
         }
         stage('validate') {
             steps {
                 withCredentials([usernamePassword(credentialsId: 'splunkbase', passwordVariable: 'SPLUNK_PASS', usernameVariable: 'SPLUNK_USER')]) {
-                    sh 'make validate'
+                    sh 'export PATH="$HOME/.local/bin:$PATH" && make validate'
                 }
             }
             post {

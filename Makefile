@@ -36,11 +36,6 @@ LOOKUPDIR = $(SRCDIR)/lookups
 endif
 
 BUILD = build
-VENV = venv
-
-VENV_BIN=$(VENV)/bin
-PYTHON=$(VENV_BIN)/python
-SYS_PYTHON = $(or $(shell which python3), $(shell which python))
 
 TAR = $(shell which tar)
 RM = $(shell which rm)
@@ -79,11 +74,8 @@ all: $(ARTIFACTS)
 
 ## Environment setup
 
-$(VENV)/pyvenv.cfg:
-	$(SYS_PYTHON) -m venv $(VENV)
-
-deps: $(VENV)/pyvenv.cfg
-	$(PYTHON) -m pip install -r requirements.txt
+deps:
+	uv sync
 
 .PHONY: deps
 
@@ -102,7 +94,7 @@ $(LOOKUPS): $(BUILD)/lookups
 	$(CP) $@ $(BUILD)/lookups/
 
 $(APPCONF): deps $(BUILD) $(LOOKUPS)
-	$(PYTHON) generate.py -t $(APPSKEL) -v $(VERSION) -n $(APPNAME) -b $(BUILD) $(SRCDIR)
+	uv run python generate.py -t $(APPSKEL) -v $(VERSION) -n $(APPNAME) -b $(BUILD) $(SRCDIR)
 
 $(PACKAGE): $(APPCONF)
 	$(TAR) -zcf $(PACKAGE) $(TARFLAGS) $(BUILD)
@@ -112,7 +104,7 @@ $(PACKAGE): $(APPCONF)
 check: lint
 
 lint: deps
-	$(VENV_BIN)/yamllint $(SRCDIR)
+	uv run yamllint $(SRCDIR)
 
 .PHONY: check lint
 
@@ -131,6 +123,6 @@ endif
 ## Clean
 
 clean:
-	$(RM) -rf $(ARTIFACTS) $(VENV) $(BUILD)
+	$(RM) -rf $(ARTIFACTS) $(BUILD) .venv
 
 .PHONY: clean
